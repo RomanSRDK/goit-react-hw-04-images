@@ -9,7 +9,6 @@ export default function Button({ loadImages }) {
     </button>
   );
 }
-
 Button.propTypes = {
   loadImages: PropTypes.func.isRequired,
 };

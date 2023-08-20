@@ -1,6 +1,6 @@
-import { Component } from 'react';
-import PixaBay from '../API/PixaBay';
+import { useState, useEffect } from 'react';
 import Searchbar from './SearchBar/Searchbar';
+import PixaBay from '../API/PixaBay';
 import ModalWindow from './ModalWindow/ModalWindow';
 import ImageGallery from './ImageGallery/ImageGallery';
 import LoaderSpinner from './Loader/Loader';
@@ -9,60 +9,50 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import styles from './App.module.css';
 
-class App extends Component {
-  state = {
-    searchInput: '',
-    images: [],
-    page: 1,
-    isLoading: false,
-    error: null,
-    showModal: false,
-    largeimg: '',
-  };
+function App() {
+  const [searchInput, setSearchInput] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [modalImage, setModalImage] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    const previousInput = prevState.searchInput;
-    const nextInput = this.state.searchInput;
-    const previousPage = prevState.page;
-    const nextPage = this.state.page;
+  useEffect(() => {
+    if (searchInput === '') return;
+    PixaBay.fetchImages(searchInput, page)
+      .then(({ hits }) => {
+        console.log(hits.length);
+        if (hits.length === 0) {
+          return setError(`could not find image by request ${searchInput}`);
+        }
+        setPage(page);
+        setImages(prevState => {
+          return [...prevState, ...hits];
+        });
+      })
+      .catch(error => console.log)
+      .finally(() => setLoading(false));
+  }, [page, searchInput]);
 
-    if (previousInput !== nextInput || previousPage !== nextPage) {
-      
-      // Очищаем список изображений при новом поисковом запросе
-      if (previousInput !== nextInput) {
-        this.setState({ images: [] });
-      }
-
-      this.setState({ isLoading: true });
-      PixaBay.fetchImages(nextInput, nextPage)
-        .then(({ hits }) => {
-          if (hits.length === 0) {
-            return this.setState({
-              status: 'rejected',
-              error: `could not find image by request ${nextInput}`,
-            });
-          }
-          this.setState(prevState => ({
-            images: [...prevState.images, ...hits],
-            status: 'resolved',
-          }));
-        })
-        .catch(error => this.setState({ error, status: 'rejected' }))
-        .finally(() => this.setState({ isLoading: false }));
+  const onSearch = string => {
+    if (string === searchInput) {
+      return;
     }
-  }
-  
-  onLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  }
+    setImages([]);
+    setSearchInput(string);
+    setPage(1);
 
-  onSearch = searchInput => {
-    this.setState({ searchInput, page: 1, error: null });
+    setError(null);
+    setLoading(true);
   };
 
-  scroll = () => {
+  const onLoadMore = () => {
+    setLoading(true);
+    setPage(page => page + 1);
+    scroll();
+  };
+
+  const scroll = () => {
     setTimeout(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
@@ -71,36 +61,29 @@ class App extends Component {
     }, 1000);
   };
 
-  modalWindowOpen = largeimg => {
-    this.setState(() => ({
-      largeimg: largeimg,
-    }));
+  const modalWindowOpen = image => {
+    setModalImage(image);
+  };
+  
+  const modalWindowClose = () => {
+    setModalImage('');
   };
 
-  modalWindowClose = () => {
-    this.setState({
-      largeimg: '',
-    });
-  };
-
-  render() {
-    const { images, error, largeimg, isLoading, page } = this.state;
-    return (
-      <div className={styles.App}>
-        <Searchbar onSubmit={this.onSearch} />
-        {isLoading && <LoaderSpinner />}
-        {images.length > 0 && !error && (
-          <ImageGallery onClickImage={this.modalWindowOpen} images={images} />
-        )}
-        {images.length >= 12 * page && <Button loadImages={this.onLoadMore} />}
-        {largeimg && (
-          <ModalWindow onClose={this.modalWindowClose} src={largeimg} />
-        )}
-        {error && <p className={styles.error}>{error}</p>}
-        <ToastContainer autoClose={2000} />
-      </div>
-    );
-  }
+  return (
+    <div className={styles.App}>
+      <Searchbar onSubmit={onSearch} />
+      {isLoading && <LoaderSpinner />}
+      {images.length > 0 && (
+        <ImageGallery onClickImage={modalWindowOpen} images={images} />
+      )}
+      {images.length >= 12 * page && <Button loadImages={onLoadMore} />}
+      {modalImage && (
+        <ModalWindow onClose={modalWindowClose} largeimg={modalImage} />
+      )}
+      {error && <p className={styles.error}>{error}</p>}
+      <ToastContainer autoClose={3000} />
+    </div>
+  );
 }
 
 export default App;
