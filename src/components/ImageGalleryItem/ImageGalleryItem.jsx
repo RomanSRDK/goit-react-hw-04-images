@@ -2,12 +2,7 @@ import React from 'react';
 import styles from '../ImageGallery/ImageGallery.module.css';
 import PropTypes from 'prop-types';
 
-export default function ImageGalleryItem({
-  tags,
-  src,
-  largeimg,
-  onClickImage,
-}) {
+export default function ImageGalleryItem({tags, src, largeimg, onClickImage}) {
   return (
     <li className={styles.imageGalleryItem}>
       <img
