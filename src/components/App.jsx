@@ -41,7 +41,6 @@ function App() {
     setImages([]);
     setSearchInput(string);
     setPage(1);
-
     setError(null);
     setLoading(true);
   };
