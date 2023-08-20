@@ -35,5 +35,7 @@ export default function ModalWindow(props) {
 }
 
 ModalWindow.propTypes = {
+  alt: PropTypes.string.isRequired,
+  src: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
 };
